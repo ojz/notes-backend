@@ -1,16 +1,17 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type app struct {
 	config  config
 	repo    *repo
-	handler *http.ServeMux
+	handler *mux.Router
 }
 
 func build(c config) (*app, error) {
@@ -22,9 +23,12 @@ func build(c config) (*app, error) {
 	}
 	a.repo = r
 
-	m := http.NewServeMux()
-	m.HandleFunc("/api/notes", a.notes)
-	m.HandleFunc("/api/notes/", a.note)
+	m := mux.NewRouter()
+	m.Methods("GET").Path("/api/notes").HandlerFunc(a.GetNotes)
+	m.Methods("POST").Path("/api/notes").HandlerFunc(a.PostNotes)
+	m.Methods("GET").Path("/api/notes/{id}").HandlerFunc(a.GetNote)
+	m.Methods("PUT").Path("/api/notes/{id}").HandlerFunc(a.PutNote)
+	m.Methods("DELETE").Path("/api/notes/{id}").HandlerFunc(a.DeleteNote)
 	a.handler = m
 
 	return a, nil
@@ -42,81 +46,77 @@ func (a app) run() {
 	log.Fatal(http.ListenAndServe(a.config.address, a.handler))
 }
 
-func (a app) notes(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		notes, err := a.repo.ListNotes()
-		if err != nil {
-			nok(w, 500, err)
-			return
-		}
-
-		ok(w, notes)
+func (a app) GetNotes(w http.ResponseWriter, r *http.Request) {
+	notes, err := a.repo.ListNotes()
+	if err != nil {
+		nok(w, 500, err)
 		return
 	}
 
-	if r.Method == "POST" {
-		var note note
-		if !in(w, r, &note) {
-			return
-		}
-
-		id, err := a.repo.AddNote(&note)
-		if err != nil {
-			nok(w, 500, err)
-			return
-		}
-
-		// construct output
-		var output struct {
-			ID int64 `json:"id"`
-		}
-		output.ID = id
-
-		ok(w, output)
-	}
+	ok(w, notes)
+	return
 }
 
-func (a app) note(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path, "/")
-	id := parts[3]
-
-	if r.Method == "GET" {
-		note, err := a.repo.ReadNote(id)
-		if err != nil {
-			nok(w, 500, err)
-			return
-		}
-
-		ok(w, note)
+func (a app) PostNotes(w http.ResponseWriter, r *http.Request) {
+	var note note
+	if !in(w, r, &note) {
 		return
 	}
 
-	// PUT
-	if r.Method == "PUT" {
-		var note note
-		if !in(w, r, &note) {
-			return
-		}
-
-		err := a.repo.EditNote(id, &note)
-		if err != nil {
-			nok(w, 500, err)
-			return
-		}
-		ok(w, nil)
+	id, err := a.repo.AddNote(&note)
+	if err != nil {
+		nok(w, 500, err)
 		return
 	}
 
-	// DELETE
-	if r.Method == "DELETE" {
-		err := a.repo.DeleteNote(id)
-		if err != nil {
-			nok(w, 500, err)
-			return
-		}
-		ok(w, nil)
+	// construct output
+	var output struct {
+		ID int64 `json:"id"`
+	}
+	output.ID = id
+
+	ok(w, output)
+}
+
+func (a app) GetNote(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	note, err := a.repo.ReadNote(id)
+	if err != nil {
+		nok(w, 500, err)
 		return
 	}
 
-	nok(w, 500, errors.New("Method unsupported atm"))
+	ok(w, note)
+}
+
+func (a app) PutNote(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var note note
+	if !in(w, r, &note) {
+		return
+	}
+
+	err := a.repo.EditNote(id, &note)
+	if err != nil {
+		nok(w, 500, err)
+		return
+	}
+	ok(w, nil)
+}
+
+func (a app) DeleteNote(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := a.repo.DeleteNote(id)
+	if err != nil {
+		nok(w, 500, err)
+		return
+	}
+	ok(w, nil)
+	return
 }
