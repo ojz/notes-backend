@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -11,7 +10,7 @@ import (
 type app struct {
 	config  config
 	repo    *repo
-	handler *mux.Router
+	handler http.Handler
 }
 
 func build(c config) (*app, error) {
@@ -31,19 +30,22 @@ func build(c config) (*app, error) {
 	m.Methods("DELETE").Path("/api/notes/{id}").HandlerFunc(a.DeleteNote)
 	a.handler = m
 
+	if c.dev {
+		a.handler = debug(a.handler)
+	}
+
 	return a, nil
 }
 
 func (a app) run() {
-	var url string
-	if strings.HasPrefix(a.config.address, ":") {
-		url = "http://localhost" + a.config.address
-	} else {
-		url = "http://" + a.config.address
-	}
-
-	log.Println("Launching server on " + url)
 	log.Fatal(http.ListenAndServe(a.config.address, a.handler))
+}
+
+func debug(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.Method, r.URL)
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (a app) GetNotes(w http.ResponseWriter, r *http.Request) {
