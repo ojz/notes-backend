@@ -18,10 +18,9 @@ post()   { http -X POST   -d "$2" "$ROOT/$1" ; }
 put()    { http -X PUT    -d "$2" "$ROOT/$1" ; }
 delete() { http -X DELETE         "$ROOT/$1" ; }
 
-post notes '{ "title": "test", "body":  "ok" }'
-post notes '{ "title": "test2", "body":  "ok2" }'
-get notes
-put notes/1 '{ "title": "updated title", "body":  "updated body" }'
-# delete notes/1
-get notes/1
+post notes '{ "title": "Hello World!", "body":  "First post!" }'
+post notes '{ "title": "Hello Again!", "body":  "Second post!" }'
+post notes '{ "title": "Notes", "body":  "This is a *real* not." }'
+put notes/3 '{ "title": "Notes", "body":  "This is a *real* note." }'
+delete notes/2
 get notes
