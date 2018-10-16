@@ -23,11 +23,11 @@ func build(c config) (*app, error) {
 	a.repo = r
 
 	m := mux.NewRouter()
-	m.Methods("GET").Path("/api/notes").HandlerFunc(a.GetNotes)
-	m.Methods("POST").Path("/api/notes").HandlerFunc(a.PostNotes)
-	m.Methods("GET").Path("/api/notes/{id}").HandlerFunc(a.GetNote)
-	m.Methods("PUT").Path("/api/notes/{id}").HandlerFunc(a.PutNote)
-	m.Methods("DELETE").Path("/api/notes/{id}").HandlerFunc(a.DeleteNote)
+	m.Methods("GET").Path(c.root + "/notes").HandlerFunc(a.GetNotes)
+	m.Methods("POST").Path(c.root + "/notes").HandlerFunc(a.PostNotes)
+	m.Methods("GET").Path(c.root + "/notes/{id}").HandlerFunc(a.GetNote)
+	m.Methods("PUT").Path(c.root + "/notes/{id}").HandlerFunc(a.PutNote)
+	m.Methods("DELETE").Path(c.root + "/notes/{id}").HandlerFunc(a.DeleteNote)
 	a.handler = m
 
 	if c.dev {

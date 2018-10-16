@@ -21,6 +21,7 @@ func main() {
 	} else {
 		url = "http://" + app.config.address
 	}
+	url = url + c.root
 
 	log.Println("Launching server on", url)
 

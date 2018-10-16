@@ -6,17 +6,16 @@ rm -f notes.db
 
 # start
 go install
-notes-backend -init -database notes.db -dev -address ":8085" &
-sleep 1
+notes-backend -init -database notes.db -dev -address ":8085" -root "/api" &
 
 # test
-ROOT="http://localhost:8085/api"
+BASE="http://localhost:8085/api"
 http() { curl -H 'Content-Type: application/json' "$@" ; }
 
-get()    { http -X GET            "$ROOT/$1" ; }
-post()   { http -X POST   -d "$2" "$ROOT/$1" ; }
-put()    { http -X PUT    -d "$2" "$ROOT/$1" ; }
-delete() { http -X DELETE         "$ROOT/$1" ; }
+get()    { http -X GET            "$BASE/$1" ; }
+post()   { http -X POST   -d "$2" "$BASE/$1" ; }
+put()    { http -X PUT    -d "$2" "$BASE/$1" ; }
+delete() { http -X DELETE         "$BASE/$1" ; }
 
 post notes '{ "title": "Hello World!", "body":  "First post!" }'
 post notes '{ "title": "Hello Again!", "body":  "Second post!" }'
